@@ -17,7 +17,6 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
         public static readonly string COMMAND_MAIL_FROM = "MAIL FROM";
         public static readonly string COMMAND_RCPT_TO = "RCPT TO";
         public static readonly string COMMAND_DATA = "DATA";
-
         public static readonly string COMMAND_QUIT = "QUIT";
         public static readonly string HEADER_SUBJECT = "Subject";
         public static readonly string HEADER_FROM = "From";
@@ -72,34 +71,34 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
             }
             catch (ArgumentNullException)
             {
-                throw new SmtpException("SMTP server address cannot be null or empty.");
+                throw new InvalidOperationException("SMTP server address cannot be null or empty.");
             }
             catch (ArgumentOutOfRangeException)
             {
-                throw new SmtpException("SMTP server port is out of range.");
+                throw new InvalidOperationException("SMTP server port is out of range.");
             }
             catch (SocketException)
             {
-                throw new SmtpException("SMTP server is not available at specified address and port.");
+                throw new SmtpException("SMTP service is not available at specified address and port.", SmtpStatusCode.ServiceNotAvailable);
             }
             catch (ObjectDisposedException)
             {
-                throw new SmtpException("Could not establish connection to SMTP server.");
+                throw new InvalidOperationException("Could not establish connection. Socket has been closed.");
             }
             catch (ArgumentException)
             {
-                throw new SmtpException("SMTP server address cannot be null or empty.");
+                throw new InvalidOperationException("SMTP server address cannot be null or empty.");
             }
             catch (InvalidOperationException)
             {
-                throw new SmtpException("Could not establish connection to SMTP server.");
+                throw new InvalidOperationException("Could not establish connection. Socket is busy.");
             }
 
             CommandResponse response = GetResult();
             
             if (response.Code != 220)
             {
-                throw new SmtpException($"Could not establish connection to SMTP server. {response.Code}: {response.Message}");
+                throw new SmtpException($"Could not establish connection to SMTP server. {response.Code}: {response.Message}", SmtpStatusCode.ServiceNotAvailable);
             }
         }
 
@@ -109,7 +108,7 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
             if (response.Code != 250)
             {
-                throw new SmtpException($"{COMMAND_EHLO} command resulted in error condition. {response.Code}: {response.Message}");
+                throw new SmtpException($"{COMMAND_EHLO} command resulted in error condition. {response.Code}: {response.Message}", SmtpStatusCode.ServiceNotAvailable);
             }
         }
 
@@ -121,7 +120,7 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
                 if (response.Code != 220)
                 {
-                    throw new SmtpException($"{COMMAND_EHLO} command resulted in error condition. {response.Code}: {response.Message}");
+                    throw new SmtpException($"{COMMAND_EHLO} command resulted in error condition. {response.Code}: {response.Message}", SmtpStatusCode.SyntaxError);
                 }
             }
         }
@@ -137,18 +136,18 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
                 
                 if (response.Code != 235)
                 {
-                    throw new SmtpException($"{COMMAND_AUTH_LOGIN} command resulted in error condition. {response.Code}: {response.Message}");
+                    throw new SmtpException($"{COMMAND_AUTH_LOGIN} command resulted in error condition. {response.Code}: {response.Message}", SmtpStatusCode.ClientNotPermitted);
                 }
             }
         }
 
         private async Task SendMailFromCommand(MailMessage mailMessage)
         {
-            CommandResponse response = await SendCommandWithResult(Encoding.UTF8.GetBytes($"{COMMAND_MAIL_FROM}: <{mailMessage.From}>{Environment.NewLine}"));
+            CommandResponse response = await SendCommandWithResult(Encoding.UTF8.GetBytes($"{COMMAND_MAIL_FROM}: <{mailMessage.From.Address}>{Environment.NewLine}"));
 
             if (response.Code != 250)
             {
-                throw new SmtpException($"{COMMAND_MAIL_FROM} command resulted in error condition. {response.Code}: {response.Message}");
+                throw new SmtpException($"{COMMAND_MAIL_FROM} command resulted in error condition. {response.Code}: {response.Message}", SmtpStatusCode.SyntaxError);
             }
         }
 
@@ -160,7 +159,7 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
                 if (response.Code != 250)
                 {
-                    throw new SmtpException($"{COMMAND_RCPT_TO} command resulted in error condition. {response.Code}: {response.Message}");
+                    throw new SmtpException($"{COMMAND_RCPT_TO} command resulted in error condition. {response.Code}: {response.Message}", SmtpStatusCode.SyntaxError);
                 }
             }
         }
@@ -171,7 +170,7 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
             if (response.Code != 354)
             {
-                throw new SmtpException($"{COMMAND_DATA} command resulted in error condition. {response.Code}: {response.Message}");
+                throw new SmtpException($"{COMMAND_DATA} command resulted in error condition. {response.Code}: {response.Message}", SmtpStatusCode.SyntaxError);
             }
         }
 
@@ -181,7 +180,7 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
             if (response.Code != 221)
             {
-                throw new SmtpException($"{COMMAND_QUIT} command resulted in error condition. {response.Code}: {response.Message}");
+                throw new SmtpException($"{COMMAND_QUIT} command resulted in error condition. {response.Code}: {response.Message}", SmtpStatusCode.SyntaxError);
             }
         }
 
@@ -191,8 +190,8 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_SUBJECT}: {mailMessage.Subject}{Environment.NewLine}"));
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_FROM}: {mailMessage.From}{Environment.NewLine}"));
-            await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_TO}: {string.Join(",", mailMessage.To.Select(mailAddress => mailAddress.Address))}{Environment.NewLine}"));
-            await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CC}: {string.Join(",", mailMessage.CC.Select(mailAddress => mailAddress.Address))}{Environment.NewLine}"));
+            await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_TO}: {string.Join(",", mailMessage.To.Select(mailAddress => mailAddress))}{Environment.NewLine}"));
+            await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CC}: {string.Join(",", mailMessage.CC.Select(mailAddress => mailAddress))}{Environment.NewLine}"));
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_SENDER}: {mailMessage.From}{Environment.NewLine}"));
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_MIME_VERSION}: 1.0{Environment.NewLine}"));
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_DATE}: {DateTime.Now}{Environment.NewLine}"));
@@ -203,7 +202,7 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
             if (response.Code != 250)
             {
-                throw new SmtpException($"{COMMAND_QUIT} command resulted in error condition. {response.Code}: {response.Message}");
+                throw new SmtpException($"{COMMAND_QUIT} command resulted in error condition. {response.Code}: {response.Message}", SmtpStatusCode.SyntaxError);
             }
         }
 
@@ -228,11 +227,11 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
             }
             catch (SocketException)
             {
-                throw new SmtpException("SMTP server is not available at specified address and port.");
+                throw new SmtpException("SMTP service is not available at specified address and port.", SmtpStatusCode.ServiceNotAvailable);
             }
             catch (ObjectDisposedException)
             {
-                throw new SmtpException("Could not establish connection to SMTP server.");
+                throw new InvalidOperationException("Could not establish connection. Socket has been closed.");
             }
 
             string textResponse = Encoding.UTF8.GetString(result).TrimEnd('\0').Trim();
@@ -240,7 +239,7 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
             if (!match.Success || match.Groups.Count != 3)
             {
-                throw new SmtpException("Could not parse SMTP server response.");
+                throw new SmtpException("Could not parse SMTP server response.", SmtpStatusCode.SyntaxError);
             }
 
             CommandResponse response = new CommandResponse(int.Parse(match.Groups[1].Value), match.Groups[2].Value);

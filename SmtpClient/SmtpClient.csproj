@@ -2,6 +2,20 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Authors>Alessandro Riperi</Authors>
+    <Company>ReturnTrue</Company>
+    <PackageId>ReturnTrue.AspNetCore.Net.SmtpClient</PackageId>
+    <Description>A simple but effective SMTP client for ASP.NET core</Description>
+    <Copyright>This project is licensed under the terms of the MIT license.</Copyright>
+    <PackageLicenseUrl>https://github.com/aleripe/SmtpClient/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/aleripe/SmtpClient</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/aleripe/SmtpClient</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+    <PackageTags>AspNetCore Network Mail Smtp Client</PackageTags>
+    <PackageReleaseNotes>Inital release</PackageReleaseNotes>
+    <RootNamespace>ReturnTrue.AspNetCore.Net.SmtpClient</RootNamespace>
+    <AssemblyName>SmtpClient</AssemblyName>
   </PropertyGroup>
 
 </Project>

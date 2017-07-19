@@ -4,12 +4,12 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 {
     public class MailMessage
     {
-        public string From { get; set; }
-        public List<MailAddress> To { get; set; }
-        public List<MailAddress> CC { get; set; }
-        public List<MailAddress> Bcc { get; set; }
+        public MailAddress From { get; set; }
+        public List<MailAddress> To { get; set; } = new List<MailAddress>();
+        public List<MailAddress> CC { get; set; } = new List<MailAddress>();
+        public List<MailAddress> Bcc { get; set; } = new List<MailAddress>();
         public string Subject { get; set; }
         public string Body { get; set; }
-        public bool IsBodyHtml { get; set; }
+        public bool IsBodyHtml { get; set; } = false;
     }
 }
