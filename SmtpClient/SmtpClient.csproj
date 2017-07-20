@@ -16,6 +16,9 @@
     <PackageReleaseNotes>Inital release</PackageReleaseNotes>
     <RootNamespace>ReturnTrue.AspNetCore.Net.SmtpClient</RootNamespace>
     <AssemblyName>SmtpClient</AssemblyName>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
 </Project>

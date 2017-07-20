@@ -11,12 +11,12 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient.Tests
         {
             MailMessage mailMessage = new MailMessage
             {
-                From = "info@paradox.it",
+                From = new MailAddress("info@paradox.it", "Paradox"),
                 To = new List<MailAddress> { new MailAddress("aleripe@gmail.com"), new MailAddress("alessandro.riperi@funfactorysrl.com") },
                 CC = new List<MailAddress> { new MailAddress("alessandro.riperi@gmail.com") },
                 Bcc = new List<MailAddress> { new MailAddress("aleripe@alice.it") },
                 Subject = "Notifica registrazione",
-                Body = "<html><body><b>Un utente</b> si è registrato <i>nel sistema</i></html>",
+                Body = "<html><body><b>Un utente</b> si &egrave; registrato <i>nel sistema</i></html>",
                 IsBodyHtml = true
             };
 

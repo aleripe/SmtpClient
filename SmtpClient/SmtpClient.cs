@@ -26,6 +26,8 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
         public static readonly string HEADER_MIME_VERSION = "Mime-Version";
         public static readonly string HEADER_DATE = "Date";
         public static readonly string HEADER_CONTENT_TYPE = "Content-Type";
+        public static readonly string HEADER_CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding";
+        public static readonly string HEADER_CONTENT_DISPOSITION = "Content-Disposition";
 
         public string SmtpServer { get; set; } = "localhost";
         public int Port { get; set; } = 25;
@@ -186,8 +188,8 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
 
         private async Task SendData(MailMessage mailMessage)
         {
-            string mimeType = mailMessage.IsBodyHtml ? "text/html" : "text/plain";
-
+            string mimeType = mailMessage.IsBodyHtml ? "text/html; charset=utf-8" : "text/plain; charset=utf-8";
+                
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_SUBJECT}: {mailMessage.Subject}{Environment.NewLine}"));
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_FROM}: {mailMessage.From}{Environment.NewLine}"));
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_TO}: {string.Join(",", mailMessage.To.Select(mailAddress => mailAddress))}{Environment.NewLine}"));
@@ -195,8 +197,33 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_SENDER}: {mailMessage.From}{Environment.NewLine}"));
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_MIME_VERSION}: 1.0{Environment.NewLine}"));
             await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_DATE}: {DateTime.Now}{Environment.NewLine}"));
-            await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CONTENT_TYPE}: {mimeType}{Environment.NewLine}"));
-            await SendCommand(Encoding.UTF8.GetBytes($"{Environment.NewLine}{mailMessage.Body}{Environment.NewLine}"));
+
+            if (mailMessage.Attachments.Count > 0)
+            {
+                string boundary = Guid.NewGuid().ToString("N");
+
+                await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CONTENT_TYPE}: multipart/mixed; boundary=\"{boundary}\"{ Environment.NewLine}"));
+
+                await SendCommand(Encoding.UTF8.GetBytes($"{Environment.NewLine}--{boundary}{Environment.NewLine}"));
+                await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CONTENT_TYPE}: {mimeType}{Environment.NewLine}"));
+                await SendCommand(Encoding.UTF8.GetBytes($"{Environment.NewLine}{mailMessage.Body}{Environment.NewLine}"));
+
+                foreach (MailAttachment mailAttachment in mailMessage.Attachments)
+                {
+                    await SendCommand(Encoding.UTF8.GetBytes($"{Environment.NewLine}--{boundary}{Environment.NewLine}"));
+                    await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CONTENT_TYPE}: application/octet-stream; name=\"{mailAttachment.Name}\"{Environment.NewLine}"));
+                    await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CONTENT_TRANSFER_ENCODING}: base64{Environment.NewLine}"));
+                    await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CONTENT_DISPOSITION}: attachment; filename=\"{mailAttachment.Name}\"{Environment.NewLine}"));
+                    await SendCommand(Encoding.UTF8.GetBytes($"{Environment.NewLine}{Convert.ToBase64String(mailAttachment.Data)}{Environment.NewLine}"));
+                }
+
+                await SendCommand(Encoding.UTF8.GetBytes($"{Environment.NewLine}--{boundary}--{Environment.NewLine}"));
+            }
+            else
+            {
+                await SendCommand(Encoding.UTF8.GetBytes($"{HEADER_CONTENT_TYPE}: {mimeType}{Environment.NewLine}"));
+                await SendCommand(Encoding.UTF8.GetBytes($"{Environment.NewLine}{mailMessage.Body}{Environment.NewLine}"));
+            }
 
             CommandResponse response = await SendCommandWithResult(Encoding.UTF8.GetBytes($".{Environment.NewLine}"));
 

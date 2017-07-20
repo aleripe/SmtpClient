@@ -13,6 +13,7 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
         private string Subject { get; set; }
         private string Body { get; set; }
         private bool IsBodyHtml { get; set; }
+        public List<MailAttachment> Attachments { get; set; } = new List<MailAttachment>();
 
         public MailMessageBuilder SetSender(string address, string name = null)
         {
@@ -53,6 +54,12 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
             return this;
         }
 
+        public MailMessageBuilder AddAttachment(string name, byte[] data)
+        {
+            Attachments.Add(new MailAttachment(name, data));
+            return this;
+        }
+
         public MailMessage Build()
         {
             MailMessage mailMessage = new MailMessage();
@@ -90,6 +97,11 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
             {
                 mailMessage.Body = Body;
                 mailMessage.IsBodyHtml = IsBodyHtml;
+            }
+
+            if (Attachments != null && Attachments.Any())
+            {
+                mailMessage.Attachments.AddRange(Attachments);
             }
 
             return mailMessage;

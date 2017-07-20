@@ -11,5 +11,6 @@ namespace ReturnTrue.AspNetCore.Net.SmtpClient
         public string Subject { get; set; }
         public string Body { get; set; }
         public bool IsBodyHtml { get; set; } = false;
+        public List<MailAttachment> Attachments { get; set; } = new List<MailAttachment>();
     }
 }
